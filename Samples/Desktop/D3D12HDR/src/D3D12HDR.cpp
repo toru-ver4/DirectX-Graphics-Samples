@@ -22,6 +22,8 @@
 #include "presentVS.hlsl.h"
 #include "presentPS.hlsl.h"
 
+#include <cmath>
+
 const float D3D12HDR::ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 const float D3D12HDR::HDRMetaDataPool[4][4] =
 {
@@ -290,23 +292,69 @@ void D3D12HDR::LoadAssets()
 
     // Create the vertex buffer.
     {
-        // Create geometry for the different sections of the render target.
-        GradientVertex gradientVertices[] =
-        {
-            // Upper strip. SDR Gradient from [0,1].
-
-            { { -1.0f, 0.45f, 0.0f }, { 0.0f, 0.0f, 0.0f } },
-            { { -1.0f, 0.55f, 0.0f }, { 0.0f, 0.0f, 0.0f } },
-            { { 0.0f, 0.45f, 0.0f }, { 1.0f, 1.0f, 1.0f } },
-            { { 0.0f, 0.55f, 0.0f }, { 1.0f, 1.0f, 1.0f } },
-
-            // Lower strip. HDR Gradient from [0,9]. Perceptually, 9.0 is about 3 times as bright as 1.0. (See gradientPS.hlsl.)
-
-            { { -1.0f, -0.55f, 0.0f }, { 0.0f, 0.0f, 0.0f } },
-            { { -1.0f, -0.45f, 0.0f }, { 0.0f, 0.0f, 0.0f } },
-            { { 0.0f, -0.55f, 0.0f }, { 3.0f, 3.0f, 3.0f } },
-            { { 0.0f, -0.45f, 0.0f }, { 3.0f, 3.0f, 3.0f } },
+        static const int gradHeightInt = 64;
+        static const int gradWidthInt = 1024;
+        static const int numOfGradColor = 7;
+        static const int numOfRectColor = 4;
+        // static const float peak_value = float(pow(100.0, (1.0/2.2)));
+        static const float peak_value = 1.0;
+        XMFLOAT3 targetColorList[numOfGradColor] = {
+            { peak_value, peak_value, peak_value },
+            { peak_value, 0.0f, 0.0f }, { 0.0f, peak_value, 0.0f }, { 0.0f, 0.0f, peak_value },
+            { peak_value, 0.0f, peak_value }, { peak_value, peak_value, 0.0f }, { 0.0f, peak_value, peak_value }
         };
+        XMFLOAT3 blackColor = { 0.0f, 0.0f, 0.0f };
+        float gradHeight = float(gradHeightInt) / (m_height - 39) * 2;  // 39 is title bar margin
+        float gradWidth = float(gradWidthInt) / (m_width - 2) * 2;
+
+        GradientVertex gradientVertices[4 * (numOfGradColor + numOfRectColor)] = {};
+
+        // gradient
+        for (int ii = 0; ii < numOfGradColor; ii++) {
+            XMFLOAT3 upperLeftPos;
+            XMFLOAT3 lowerLeftPos;
+            XMFLOAT3 upperRightPos;
+            XMFLOAT3 lowerRightPos;
+            float upperY = 1.0 - (ii * gradHeight);
+            float lowerY = 1.0 - ((ii + 1) * gradHeight);
+            int baseVertex = ii * 4;
+            
+            lowerLeftPos = { -1.0f, lowerY, 0.0f };
+            upperLeftPos = { -1.0f, upperY, 0.0f };
+            lowerRightPos = { gradWidth -1.0f, lowerY, 0.0f };
+            upperRightPos = { gradWidth -1.0f, upperY, 0.0f };
+            
+            gradientVertices[baseVertex + 0] = { lowerLeftPos, blackColor };
+            gradientVertices[baseVertex + 1] = { upperLeftPos, blackColor };
+            gradientVertices[baseVertex + 2] = { lowerRightPos, targetColorList[ii]};
+            gradientVertices[baseVertex + 3] = { upperRightPos, targetColorList[ii]};
+        }
+
+        static const int rectWidthInt = 128;
+        static const int rectHeightInt = 128;
+        static const float rectWidth = float(rectWidthInt) / (m_width - 2) * 2;
+        static const float rectHeight = float(rectHeightInt) / (m_height - 39) * 2;  // 39 is title bar margin
+        float rectUpperY = 1.0 - numOfGradColor * gradHeight;
+        float rectLowerY = 1.0 - numOfGradColor * gradHeight - rectHeight;
+
+        for (int ii = 0; ii < numOfRectColor; ii++) {
+            int baseVertex = (ii + numOfGradColor) * 4;
+            float rectLowerX = -1.0 + rectWidth * ii;
+            float rectUpperX = -1.0 + rectWidth * (ii + 1);
+            XMFLOAT3 upperLeftPos;
+            XMFLOAT3 lowerLeftPos;
+            XMFLOAT3 upperRightPos;
+            XMFLOAT3 lowerRightPos;
+            lowerLeftPos = { rectLowerX, rectLowerY, 0.0f };
+            upperLeftPos = { rectLowerX, rectUpperY, 0.0f };
+            lowerRightPos = { rectUpperX, rectLowerY, 0.0f };
+            upperRightPos = { rectUpperX, rectUpperY, 0.0f };
+
+            gradientVertices[baseVertex + 0] = { lowerLeftPos, targetColorList[ii] };
+            gradientVertices[baseVertex + 1] = { upperLeftPos, targetColorList[ii] };
+            gradientVertices[baseVertex + 2] = { lowerRightPos, targetColorList[ii] };
+            gradientVertices[baseVertex + 3] = { upperRightPos, targetColorList[ii] };
+        }
 
         // The vertices for the color space triangles are dependent on the size of the
         // render target and will not be loaded at this time. We'll leave a gap in the
@@ -511,8 +559,8 @@ void D3D12HDR::UpdateVertexBuffer()
         { 0.131f, 0.046f },
         { 0.3127f, 0.3290f }
     };
-    const XMFLOAT2 offset1 = { 0.2f, 0.0f };
-    const XMFLOAT2 offset2 = { 0.2f, -1.0f };
+    const XMFLOAT2 offset1 = { 1.0f, 0.0f };
+    const XMFLOAT2 offset2 = { 1.0f, -1.0f };
     const XMFLOAT3 triangle709[] =
     {
         TransformVertex(primaries709[0], offset1),    // R
@@ -650,14 +698,27 @@ void D3D12HDR::RenderScene()
         const float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
         m_commandList->ClearRenderTargetView(intermediateRtv, clearColor, 0, nullptr);
 
-        m_commandList->IASetVertexBuffers(0, 1, &m_gradientVertexBufferView);
-        PIXBeginEvent(m_commandList.Get(), 0, L"Standard Gradient");
-        m_commandList->DrawInstanced(4, 1, 0, 0);
-        PIXEndEvent(m_commandList.Get());
+        const wchar_t* gradientName[] = {
+            L"White",
+            L"Red",
+            L"Green",
+            L"Blue",
+            L"Magenta",
+            L"Yellow",
+            L"Cyan",
+            L"W_Window",
+            L"R_Window",
+            L"G_Window",
+            L"B_Window",
+        };
 
-        PIXBeginEvent(m_commandList.Get(), 0, L"Bright Gradient");
-        m_commandList->DrawInstanced(4, 1, 4, 0);
-        PIXEndEvent(m_commandList.Get());
+        m_commandList->IASetVertexBuffers(0, 1, &m_gradientVertexBufferView);
+
+        for (int ii = 0; ii < 7 + 4; ii++) {
+            PIXBeginEvent(m_commandList.Get(), 0, gradientName[ii]);
+            m_commandList->DrawInstanced(4, 1, ii*4, 0);
+            PIXEndEvent(m_commandList.Get());
+        }
 
         m_commandList->SetPipelineState(m_pipelineStates[PalettePSO].Get());
         m_commandList->IASetVertexBuffers(0, 1, &m_trianglesVertexBufferView);
@@ -701,7 +762,7 @@ void D3D12HDR::RenderScene()
         // If the UI is enabled, the 11on12 layer will do the state transition for us.
         UINT barrierCount = m_enableUI ? 2 : _countof(barriers);
         m_commandList->ResourceBarrier(barrierCount, barriers);
-        m_commandList->SetPipelineState(m_pipelineStates[Present8bitPSO + m_currentSwapChainBitDepth].Get());
+        m_commandList->SetPipelineState(m_pipelineStates[Present8bitPSO + m_currentSwapChainBitDepth].Get()); 
 
         CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
         m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
