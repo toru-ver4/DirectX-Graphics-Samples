@@ -293,7 +293,7 @@ void D3D12HDR::LoadAssets()
     // Create the vertex buffer.
     {
         static const int gradHeightInt = 64;
-        static const int gradWidthInt = 1024;
+        static const int gradWidthInt = 1024 - 2;  // "-2" is a manual adjustment coefficient to set the length to 1024 pixels.
         static const int numOfGradColor = 7;
         static const int numOfRectColor = 4;
         // static const float peak_value = float(pow(100.0, (1.0/2.2)));
@@ -304,8 +304,8 @@ void D3D12HDR::LoadAssets()
             { peak_value, 0.0f, peak_value }, { peak_value, peak_value, 0.0f }, { 0.0f, peak_value, peak_value }
         };
         XMFLOAT3 blackColor = { 0.0f, 0.0f, 0.0f };
-        float gradHeight = float(gradHeightInt) / (m_height - 39) * 2;  // 39 is title bar margin
-        float gradWidth = float(gradWidthInt) / (m_width - 2) * 2;
+        float gradHeight = float(gradHeightInt) / (m_height - 39) * 2;  // -39 is title bar margin
+        float gradWidth = float(gradWidthInt) / (m_width - 2) * 2;  // -2 is window border margin
 
         GradientVertex gradientVertices[4 * (numOfGradColor + numOfRectColor)] = {};
 
