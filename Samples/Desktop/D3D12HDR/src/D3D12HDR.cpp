@@ -22,8 +22,6 @@
 #include "presentVS.hlsl.h"
 #include "presentPS.hlsl.h"
 
-#include <cmath>
-
 const float D3D12HDR::ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 const float D3D12HDR::HDRMetaDataPool[4][4] =
 {
@@ -762,7 +760,7 @@ void D3D12HDR::RenderScene()
         // If the UI is enabled, the 11on12 layer will do the state transition for us.
         UINT barrierCount = m_enableUI ? 2 : _countof(barriers);
         m_commandList->ResourceBarrier(barrierCount, barriers);
-        m_commandList->SetPipelineState(m_pipelineStates[Present8bitPSO + m_currentSwapChainBitDepth].Get()); 
+        m_commandList->SetPipelineState(m_pipelineStates[Present8bitPSO + m_currentSwapChainBitDepth].Get());
 
         CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
         m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
