@@ -313,8 +313,8 @@ void D3D12HDR::LoadAssets()
             XMFLOAT3 lowerLeftPos;
             XMFLOAT3 upperRightPos;
             XMFLOAT3 lowerRightPos;
-            float upperY = 1.0 - (ii * gradHeight);
-            float lowerY = 1.0 - ((ii + 1) * gradHeight);
+            float upperY = (float)(1.0 - (ii * gradHeight));
+            float lowerY = (float)(1.0 - ((ii + 1) * gradHeight));
             int baseVertex = ii * 4;
             
             lowerLeftPos = { -1.0f, lowerY, 0.0f };
@@ -332,13 +332,13 @@ void D3D12HDR::LoadAssets()
         static const int rectHeightInt = 128;
         static const float rectWidth = float(rectWidthInt) / (m_width - 2) * 2;
         static const float rectHeight = float(rectHeightInt) / (m_height - 39) * 2;  // 39 is title bar margin
-        float rectUpperY = 1.0 - numOfGradColor * gradHeight;
-        float rectLowerY = 1.0 - numOfGradColor * gradHeight - rectHeight;
+        float rectUpperY = (float)(1.0 - numOfGradColor * gradHeight);
+        float rectLowerY = (float)(1.0 - numOfGradColor * gradHeight - rectHeight);
 
         for (int ii = 0; ii < numOfRectColor; ii++) {
             int baseVertex = (ii + numOfGradColor) * 4;
-            float rectLowerX = -1.0 + rectWidth * ii;
-            float rectUpperX = -1.0 + rectWidth * (ii + 1);
+            float rectLowerX = (float)(- 1.0 + rectWidth * ii);
+            float rectUpperX = (float)( - 1.0 + rectWidth * (ii + 1));
             XMFLOAT3 upperLeftPos;
             XMFLOAT3 lowerLeftPos;
             XMFLOAT3 upperRightPos;
