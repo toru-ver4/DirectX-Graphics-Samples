@@ -32,15 +32,16 @@ float3 PSMain(PSInput input) : SV_TARGET
         const float st2084max = 10000.0;
         const float hdrScalar = standardNits / st2084max;
 
-        // The HDR scene is in Rec.709, but the display is Rec.2020
-        result = Rec709ToRec2020(result);
+        // The HDR scene is in Rec.2020. Therefore, conversion is not needed.
+        // result = Rec709ToRec2020(result);
 
         // Apply the ST.2084 curve to the scene.
         result = LinearToST2084(result * hdrScalar);
     }
     else // displayCurve == DISPLAY_CURVE_LINEAR
     {
-        // Just pass through
+        // Convert Rec.2020 to Rec.709
+        result = Rec2020ToRec709(result);
     }
 
     return result;

@@ -78,6 +78,19 @@ float3 Rec2020ToRec709(float3 color)
     return mul(conversion, color);
 }
 
+float3 Rec2020ToRec709_v2(float3 color)
+{
+    // A conversion matrix that is adjusted to match the scRGB values converted from FP16
+    // with the scRGB values converted from REC2020 UINT10 values.
+    static const float3x3 conversion =
+    {
+        1.66, -0.5876, -0.0728516,
+        -0.1245313, 1.1325, -0.008345,
+        -0.018145, -0.1005469, 1.118125
+    };
+    return mul(conversion, color);
+}
+
 float3 LinearToST2084(float3 color)
 {
     float m1 = 2610.0 / 4096.0 / 4;
