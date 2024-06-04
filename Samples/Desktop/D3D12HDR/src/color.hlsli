@@ -91,6 +91,18 @@ float3 Rec2020ToRec709_v2(float3 color)
     return mul(conversion, color);
 }
 
+float3 Rec2020ToRec709_v3(float3 color)
+{
+    // A conversion matrix that is calculated from FP16 Rec709 to Rec2020 matrix
+    static const float3x3 conversion =
+    {
+        1.66, -0.588, -0.0728,
+        -0.1246, 1.133, -0.008354,
+        -0.01814, -0.1006, 1.119
+    };
+    return mul(conversion, color);
+}
+
 float3 LinearToST2084(float3 color)
 {
     float m1 = 2610.0 / 4096.0 / 4;
